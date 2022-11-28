@@ -14,7 +14,7 @@ app.use(express.json())
 const username = process.env.DB_USER
 const password = process.env.DB_PASSWORD
 const uri = `mongodb+srv://${username}:${password}@cluster0.9sysdmk.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri)
+
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
@@ -39,6 +39,17 @@ async function run() {
             console.log(result)
 
 
+        })
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+
+            if (user) {
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
+                return res.send({ accessToken: token })
+            }
+            res.status(403).send({ accessToken: '' })
         })
 
     }
