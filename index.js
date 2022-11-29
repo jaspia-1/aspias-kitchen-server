@@ -184,8 +184,11 @@ async function run() {
             const resut = await productCollection.insertOne(data);
             res.send(resut);
         })
-        app.get('/product', async (req, res) => {
+        app.get('/product', verifyJWT, async (req, res) => {
             const email = req.query.email;
+            if (email !== req.decoded.email) {
+                res.status(403).send({ message: 'Unauthorized access' })
+            }
             const query = {
                 email: email
             }
