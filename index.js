@@ -77,6 +77,12 @@ async function run() {
             res.send({ isSeller: req?.role === 'Seller', verified: req.verified });
 
         })
+        app.get('/catagory/:id', async (req, res) => {
+            const catagory = req.params.id;
+            const query = { catagory: catagory, issold: false };
+            const result = await productCollection.find(query).toArray();
+            res.send(result);
+        })
         app.get('/user/admin', verifyAdmin, async (req, res) => {
 
             res.send({ isAdmin: req?.role === 'admin' });
