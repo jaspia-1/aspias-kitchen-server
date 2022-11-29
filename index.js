@@ -41,6 +41,18 @@ async function run() {
             }
             next();
         }
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== 'admin') {
+
+                req.role = ''
+            } else {
+                req.role = 'admin'
+            }
+            next();
+        }
         app.put('/user', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email };
