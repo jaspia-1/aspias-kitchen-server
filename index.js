@@ -249,6 +249,20 @@ async function run() {
             }
 
         })
+        app.delete('/userdelete', verifyAdmin, async (req, res) => {
+            if (req.role === 'admin') {
+                const selleremail = req.query.selleremail;
+                const query = { email: selleremail }
+                const result = await userCollection.deleteMany(query);
+                const result2 = await bookedCollection.deleteMany(query);
+                const result3 = await productCollection.deleteMany(query);
+                const result4 = await advertiseCollection.deleteMany(query);
+                res.send({ msg: true })
+            }
+            else {
+                res.send({ msg: false })
+            }
+        })
         app.get('/bookinglist', async (req, res) => {
             const email = req.query.email;
 
