@@ -57,6 +57,14 @@ async function run() {
             }
             next();
         }
+        app.get('/wishlist', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                email: email
+            }
+            const products = await wishListCollection.find(query).toArray();
+            res.send(products);
+        })
         app.put('/wishlist', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email, serial: user._id };
