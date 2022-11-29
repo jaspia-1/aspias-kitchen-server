@@ -5,7 +5,7 @@ require('dotenv').config()
 const { query } = require('express');
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors())
 app.use(express.json())
 
@@ -26,6 +26,7 @@ async function run() {
         const productCollection = client.db('bikebd').collection('product');
         const wishListCollection = client.db('bikebd').collection('wishlist');
         const bookedCollection = client.db('bikebd').collection('booked');
+        const advertiseCollection = client.db('bikebd').collection('advertise');
 
         const verifySeller = async (req, res, next) => {
             const email = req.query.email;
@@ -132,6 +133,72 @@ async function run() {
             const resut = await productCollection.insertOne(data);
             res.send(resut);
         })
+        app.get('/product', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                email: email
+            }
+            const products = await productCollection.find(query).toArray();
+            res.send(products);
+        })
+        app.delete('/singlebike/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { serial: id };
+            const filter2 = { _id: ObjectId(id) }
+            const res1 = await bookedCollection.deleteOne(filter);
+            const res2 = await advertiseCollection.deleteOne(filter);
+            const res3 = await wishListCollection.deleteOne(filter);
+            const res4 = await productCollection.deleteOne(filter2);
+            res.send(res4);
+
+        })
+        app.put('/available', async (req, res) => {
+            const id = req.body;
+            const filter = { serial: id._id };
+            const filter2 = { _id: ObjectId(id._id) }
+            const updateDoc = {
+                $set: {
+                    issold: false,
+                    newOwner: "",
+                    txnid: ""
+                }
+            };
+            const res1 = await bookedCollection.updateOne(filter, updateDoc);
+            const res2 = await wishListCollection.updateOne(filter, updateDoc);
+            const res3 = await productCollection.updateOne(filter2, updateDoc);
+            res.send(res3)
+        })
+        app.post('/advertise', async (req, res) => {
+            const advertise = req.body;
+            const query = {
+                serial: advertise.id,
+            }
+            const alreadyadvertised = await advertiseCollection.find(query).toArray();
+            if (alreadyadvertised.length) {
+                return res.send({ acknowledged: false })
+            }
+            const result = await advertiseCollection.insertOne(advertise);
+            res.send(result);
+        })
+
+        app.put('/sold', async (req, res) => {
+            const id = req.body;
+            const filter = { serial: id._id };
+            const filter2 = { _id: ObjectId(id._id) }
+            const updateDoc = {
+                $set: {
+                    issold: true,
+                    newOwner: "The owner",
+                    txnid: "No Payment"
+                }
+            };
+            const res1 = await wishListCollection.updateOne(filter, updateDoc);
+            const res2 = await advertiseCollection.deleteOne(filter);
+            const res3 = await bookedCollection.updateOne(filter, updateDoc);
+            const res4 = await productCollection.updateOne(filter2, updateDoc);
+            res.send(res4)
+        })
+
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
