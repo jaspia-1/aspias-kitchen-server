@@ -227,6 +227,28 @@ async function run() {
             const products = await userCollection.find(query).toArray();
             res.send(products);
         })
+        app.put('/verify', verifyAdmin, async (req, res) => {
+            if (req.role === 'admin') {
+                const filter = { email: req.body.email }
+                const updateDoc = {
+                    $set: {
+                        verifiedSeller: true
+                    }
+                }
+                const result = await productCollection.updateMany(filter, updateDoc);
+                const result2 = await userCollection.updateMany(filter, updateDoc);
+                if (result.acknowledged && result2.acknowledged) {
+                    res.send({ msg: true })
+                }
+                else {
+                    res.send({ msg: false })
+                }
+            }
+            else {
+                res.send({ msg: false })
+            }
+
+        })
         app.get('/bookinglist', async (req, res) => {
             const email = req.query.email;
 
