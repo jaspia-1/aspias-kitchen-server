@@ -76,6 +76,11 @@ async function run() {
             res.send({ isSeller: req?.role === 'Seller', verified: req.verified });
 
         })
+        app.get('/user/admin', verifyAdmin, async (req, res) => {
+            // console.log(req?.role)
+            res.send({ isAdmin: req?.role === 'admin' });
+
+        })
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
