@@ -218,6 +218,15 @@ async function run() {
             }
             res.status(403).send({ accessToken: '' })
         })
+        app.get('/bookinglist', async (req, res) => {
+            const email = req.query.email;
+
+            const query = {
+                email: email
+            }
+            const products = await bookedCollection.find(query).toArray();
+            res.send(products);
+        })
 
     }
     catch {
