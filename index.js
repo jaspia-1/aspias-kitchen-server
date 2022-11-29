@@ -24,6 +24,8 @@ async function run() {
 
         const userCollection = client.db('bikebd').collection('users');
         const productCollection = client.db('bikebd').collection('product');
+        const wishListCollection = client.db('bikebd').collection('wishlist');
+        const bookedCollection = client.db('bikebd').collection('booked');
 
         const verifySeller = async (req, res, next) => {
             const email = req.query.email;
@@ -54,6 +56,26 @@ async function run() {
             }
             next();
         }
+        app.put('/wishlist', async (req, res) => {
+            const user = req.body;
+            const filter = { email: user.email, serial: user._id };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    email: user.email,
+                    serial: user._id,
+                    catagory: user.catagory,
+                    name: user.name,
+                    img: user.img,
+                    issold: user.issold,
+                    newOwner: user.newOwner,
+                    price: user.price,
+                    txnid: user.txnid
+                }
+            };
+            const result = await wishListCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        })
         app.put('/user', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email };
@@ -71,6 +93,22 @@ async function run() {
             res.send(result)
             console.log(result)
 
+
+        })
+        app.post('/booking', async (req, res) => {
+            const bookedData = req.body;
+
+            const query = {
+                serial: bookedData.serial,
+                email: bookedData.email
+            }
+            const alreadyBooked = await bookedCollection.find(query).toArray();
+            if (alreadyBooked.length) {
+                const msg = `Already booked the ${bookedData.name}`
+                return res.send({ acknowledged: false, msg })
+            }
+            const result = await bookedCollection.insertOne(bookedData);
+            res.send(result);
 
         })
         app.get('/user/seller', verifySeller, async (req, res) => {
