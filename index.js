@@ -11,12 +11,32 @@ app.use(express.json())
 
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const username = process.env.DB_USER
-const password = process.env.DB_PASSWORD
-const uri = `mongodb+srv://${username}:${password}@cluster0.9sysdmk.mongodb.net/?retryWrites=true&w=majority`;
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.9sysdmk.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).send('unauthorized access')
+    }
+    console.log(authHeader)
+    const token = authHeader.split(' ')[1];
+    if (token === null) {
+        res.status(401).send('unauthorized access')
+
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        console.log(decoded)
+        next()
+    });
+}
 
 async function run() {
     try {
