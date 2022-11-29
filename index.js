@@ -10,7 +10,7 @@ app.use(cors())
 app.use(express.json())
 
 
-
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const username = process.env.DB_USER
 const password = process.env.DB_PASSWORD
 const uri = `mongodb+srv://${username}:${password}@cluster0.9sysdmk.mongodb.net/?retryWrites=true&w=majority`;
@@ -104,6 +104,23 @@ async function run() {
 
 
         })
+        app.put('/payment', async (req, res) => {
+            const user = req.body;
+            const filter = { serial: user.bookingId };
+            const filter2 = { _id: ObjectId(user.bookingId) }
+            const updateDoc = {
+                $set: {
+                    issold: true,
+                    newOwner: user.email,
+                    txnid: user.transactionID
+                }
+            };
+            const result = await advertiseCollection.deleteOne(filter);
+            const result2 = await bookedCollection.updateMany(filter, updateDoc);
+            const result3 = await productCollection.updateMany(filter2, updateDoc);
+            const result4 = await wishListCollection.updateMany(filter, updateDoc);
+            res.send(result4)
+        })
         app.post('/booking', async (req, res) => {
             const bookedData = req.body;
 
@@ -119,6 +136,12 @@ async function run() {
             const result = await bookedCollection.insertOne(bookedData);
             res.send(result);
 
+        })
+        app.get('/payinfo/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const booking = await productCollection.findOne(query);
+            res.send(booking);
         })
         app.get('/user/seller', verifySeller, async (req, res) => {
             res.send({ isSeller: req?.role === 'Seller', verified: req.verified });
@@ -171,9 +194,9 @@ async function run() {
                     txnid: ""
                 }
             };
-            const res1 = await bookedCollection.updateOne(filter, updateDoc);
-            const res2 = await wishListCollection.updateOne(filter, updateDoc);
-            const res3 = await productCollection.updateOne(filter2, updateDoc);
+            const res1 = await bookedCollection.updateMany(filter, updateDoc);
+            const res2 = await wishListCollection.updateMany(filter, updateDoc);
+            const res3 = await productCollection.updateMany(filter2, updateDoc);
             res.send(res3)
         })
         app.post('/advertise', async (req, res) => {
@@ -188,7 +211,6 @@ async function run() {
             const result = await advertiseCollection.insertOne(advertise);
             res.send(result);
         })
-
         app.put('/sold', async (req, res) => {
             const id = req.body;
             const filter = { serial: id._id };
@@ -200,13 +222,31 @@ async function run() {
                     txnid: "No Payment"
                 }
             };
-            const res1 = await wishListCollection.updateOne(filter, updateDoc);
+            const res1 = await wishListCollection.updateMany(filter, updateDoc);
             const res2 = await advertiseCollection.deleteOne(filter);
-            const res3 = await bookedCollection.updateOne(filter, updateDoc);
-            const res4 = await productCollection.updateOne(filter2, updateDoc);
+            const res3 = await bookedCollection.updateMany(filter, updateDoc);
+            const res4 = await productCollection.updateMany(filter2, updateDoc);
             res.send(res4)
         })
+        app.post("/create-payment-intent", async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            const amount = price * 10;
+            console.log(price)
+            console.log(amount)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                "payment_method_types": [
+                    "card"
+                ],
 
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+
+            })
+        })
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
@@ -248,6 +288,11 @@ async function run() {
                 res.send({ msg: false })
             }
 
+        })
+        app.get('/advertise', async (req, res) => {
+            const query = {}
+            const products = await advertiseCollection.find(query).toArray();
+            res.send(products);
         })
         app.delete('/userdelete', verifyAdmin, async (req, res) => {
             if (req.role === 'admin') {
