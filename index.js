@@ -23,6 +23,7 @@ async function run() {
 
 
         const userCollection = client.db('bikebd').collection('users');
+        const productCollection = client.db('bikebd').collection('product');
 
         const verifySeller = async (req, res, next) => {
             const email = req.query.email;
@@ -77,9 +78,15 @@ async function run() {
 
         })
         app.get('/user/admin', verifyAdmin, async (req, res) => {
-            // console.log(req?.role)
+
             res.send({ isAdmin: req?.role === 'admin' });
 
+        })
+        app.post('/productadd', async (req, res) => {
+            const data = req.body;
+            data.date = new Date(Date.now()).toISOString();
+            const resut = await productCollection.insertOne(data);
+            res.send(resut);
         })
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
