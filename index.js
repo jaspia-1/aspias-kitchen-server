@@ -20,7 +20,27 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run() {
     try {
+
+
         const userCollection = client.db('bikebd').collection('users');
+
+        const verifySeller = async (req, res, next) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== 'Seller') {
+
+                req.role = ''
+                req.verified = false
+            } else {
+                req.verified = false
+                req.role = 'Seller'
+                if (user.verifiedSeller) {
+                    req.verified = true
+                }
+            }
+            next();
+        }
         app.put('/user', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email };
